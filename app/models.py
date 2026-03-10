@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, Float, ForeignKey
 from sqlalchemy.orm import declarative_base
 from sqlalchemy_utils.types import ChoiceType
+from sqlalchemy.orm import relationship
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +20,7 @@ class User(base):
       pwrd = Column("pwrd", String)
       active = Column("active", Boolean)
       admin = Column("admin", Boolean, default = False)
+      books = relationship("Book", back_populates="user")
 
       def __init__(self, name, email, pwrd, active= True, admin=False):
             self.name = name
@@ -39,11 +41,14 @@ class Book(base):
       id = Column("id", Integer, primary_key = True, autoincrement=True)
       title = Column("title", String)
       categories = Column("categories", String)
-      average_rating = Column("average_rating", String)
-      rating_count = Column("rating_count", Float)
+      average_rating = Column("average_rating", Float)
+      rating_count = Column("rating_count", Integer)
       my_rating = Column("my_rating", Integer, nullable = True)
       status = Column("status", String) ## to_read, reading and finished
       isbn = Column("isbn", String)
+      user_id = Column(Integer, ForeignKey("users.id"))
+
+      user = relationship("User", back_populates="books")
 
 
       def __init__(self, title, categories, average_rating, rating_count, my_rating, status, isbn):
