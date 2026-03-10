@@ -19,7 +19,6 @@ def save_book(book_schema: BookSchema, session: Session = Depends(cath_session))
     data = get_book_by_id(book_schema.google_books_id)
     info = data["volumeInfo"]
 
-    # Pega o ISBN
     isbn = None
     for identifier in info.get("industryIdentifiers", []):
         if identifier["type"] == "ISBN_13":
@@ -28,7 +27,7 @@ def save_book(book_schema: BookSchema, session: Session = Depends(cath_session))
 
     new_book = Book(
         title=info.get("title"),
-        categories=", ".join(info.get("categories", [])),  # lista -> string
+        categories=", ".join(info.get("categories", [])),
         average_rating=info.get("averageRating", 0.0),
         rating_count=info.get("ratingsCount", 0),
         my_rating=book_schema.my_rating,
@@ -41,3 +40,12 @@ def save_book(book_schema: BookSchema, session: Session = Depends(cath_session))
     session.commit()
     session.refresh(new_book)
     return new_book
+
+@book_router.get("/count_books")
+def book_count(session: Session = Depends(cath_session)):
+    counts = {
+        "to_read": session.query(Book).filter(Book.status == "to_read").count(),
+        "reading": session.query(Book).filter(Book.status == "reading").count(),
+        "finished": session.query(Book).filter(Book.status == "finished").count(),
+    }
+    return counts
