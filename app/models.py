@@ -52,6 +52,7 @@ class Book(base):
 
 
       def __init__(self, title, categories, average_rating, rating_count, my_rating, status, isbn):
+            
             self.title = title
             self.categories = categories
             self.average_rating = average_rating 

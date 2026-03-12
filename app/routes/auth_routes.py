@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from models import User, db
-from dependencies import cath_session
+from dependencies import cath_session, verify_token
 from main import bcrypt_context, ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime,timedelta, timezone
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -18,13 +19,9 @@ async def authenticate():
 
 def create_token(id_user, token_time = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
       expirate_date = datetime.now(timezone.utc) + token_time
-      dic_info = {"sub": id_user, "exp":expirate_date}
+      dic_info = {"sub": str(id_user), "exp":expirate_date}
       jwt_cod = jwt.encode(dic_info, SECRET_KEY, ALGORITHM)
       return jwt_cod
-
-def verify_token(token, session: Session = Depends(cath_session)):
-      user = session.query(User).filter(User.id==1).first()
-      return user
 
 
 def user_authenticate(email, pwrd, session):
@@ -56,16 +53,27 @@ async def login(login_schema:LoginSchema, session: Session = Depends(cath_sessio
             access_token = create_token(user.id)
             refresh_token = create_token(user.id, timedelta(days=7))
             return {
-                  "acess_token": access_token,
+                  "access_token": access_token,
                   "refresh_token": refresh_token,
                   "token_type": "Bearer"
             } 
       
+@auth_router.post("/login-form")
+async def login_form(data_form: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(cath_session)):
+      user = user_authenticate(data_form.username, data_form.password, session)
+      if not user:
+            raise HTTPException(status_code=400, detail="User not found or invalid credentials")
+      else:
+            access_token = create_token(user.id)
+            return {
+                  "access_token": access_token,
+                  "token_type": "Bearer"
+            } 
+
 @auth_router.post("/refresh")
-async def use_refresh_token(token):
-      user = verify_token(token)
+async def use_refresh_token(user: User = Depends(verify_token)):
       access_token = create_token(user.id)
       return {
-                  "acess_token": access_token,
+                  "access_token": access_token,
                   "token_type": "Bearer"
             }

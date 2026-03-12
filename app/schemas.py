@@ -31,3 +31,10 @@ class BookSchema(BaseModel):
 
       class Config:
             from_attributes = True
+
+class BookUpdateSchema(BaseModel):
+      status: BookStatus   # to_read, reading, finished
+      my_rating: Optional[int] = None
+
+      class Config:
+            from_attributes = True
